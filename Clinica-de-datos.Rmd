@@ -1,0 +1,508 @@
+---
+title: "Clínica-de-datos"
+author: "Mercedes de Vedia"
+date: "2025-10-30"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+```
+
+```{r}
+censo2010_dcuali <- read.csv("data/Desafío 4  Información censal 2010-20251030/Censo2010_Hog_Deficit_Cuali.csv",
+                      stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+summary(censo2010_dcuali)
+```
+
+```{r}
+censo2010_hc <- read.csv("data/Desafío 4  Información censal 2010-20251030/Censo2010_Hogares_Hac.csv",
+                      stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+summary(censo2010_hc)
+```
+
+```{r}
+censo2022_dcuali <- read.csv("data/Desafío 4  Información censal 2022-20251030/Censo2022_Hog_Deficit_Cuali.csv",
+                      stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+summary(censo2022_dcuali)
+```
+
+```{r}
+censo2022_hc <- read.csv("data/Desafío 4  Información censal 2022-20251030/Censo2022_Hogares_Hac.csv",
+                         stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+summary(censo2022_hc)
+```
+```{r}
+renabap <- read.csv("data/Desafío 4  Registro Nacional de Barrios Populares (ReNaBaP)-20251030/20231205_info_publica_datos_barrios.csv",
+                    stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+summary(renabap)
+```
+
+```{r}
+departamentos <- st_read("data/ARG_departamentos_2010.gpkg")
+```
+
+```{r}
+provincias <- st_read("data/provincias_argentina.gpkg")
+```
+
+```{r}
+censo_2010_hogares <- read.csv("data/Desafío 4  Información censal 2010-20251030/Censo2010_Pob_Viv_Hog.csv",
+                                stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+censo_2022_hogares <- read.csv("data/Desafío 4  Información censal 2022-20251030/Censo2022_Pob_Viv_Hog.csv",
+                               stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+censo_2010_vh <- read.csv("data/Desafío 4  Información censal 2010-20251030/Censo2010_Viv_Habitadas.csv",
+                          stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+censa_2022_vh <- read.csv("data/Desafío 4  Información censal 2022-20251030/Censo2022_Viv_Habitadas.csv",
+                          stringsAsFactors = TRUE,
+                      encoding = "UTF-8")
+```
+
+```{r}
+library(stringr)
+
+censo_2022_hogares$Código <- str_pad(censo_2022_hogares$Código, width = 5, pad = "0")
+```
+
+```{r}
+str(censo_2022_hogares)
+```
+
+```{r}
+library(dplyr)
+
+censo_2022_hogares_filtrado <- censo_2022_hogares %>%
+  filter(str_starts(`Código`, "06") | str_starts(`Código`, "58"))
+
+```
+
+```{r}
+write.csv(censo_2022_hogares_filtrado, "censo_2022_hogares_filtrado.csv", row.names = FALSE)
+```
+
+```{r}
+censo_2022_hogares_filtrado
+```
+
+```{r}
+censo_2010_hogares_filtrado <- read.csv("data/censo_2010_hogares_filtrado.csv",
+                                         stringsAsFactors = TRUE,
+                                        encoding = "UTF-8")
+                                        
+```
+
+```{r}
+censo_2010_hogares_filtrado
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+censo_2010_hogares_filtrado$Código <- str_pad(censo_2010_hogares_filtrado$Código, width = 5, pad = "0")
+```
+
+```{r}
+write.csv(censo_2010_hogares_filtrado, "censo_2010_hogares_filtrado.csv", row.names = FALSE)
+```
+
+```{r}
+
+censo_2010_hogares_filtrado <- censo_2010_hogares_filtrado %>%
+  mutate(Año = 2010)
+
+censo_2022_hogares_filtrado <- censo_2022_hogares_filtrado %>%
+  mutate(Año = 2022)
+
+```
+
+```{r}
+censo_2010_hogares_filtrado <- censo_2010_hogares_filtrado %>%
+  rename(
+    Poblacion = Poblacion2010,
+    Viviendas = Viviendas2010,
+    Hogares   = Hogares2010
+  )
+
+censo_2022_hogares_filtrado <- censo_2022_hogares_filtrado %>%
+  rename(
+    Poblacion = Poblacion2022,
+    Viviendas = Viviendas2022,
+    Hogares   = Hogares2022
+  )
+```
+
+```{r}
+censo_hogares_NQN_PBA <- bind_rows(censo_2010_hogares_filtrado, censo_2022_hogares_filtrado)
+```
+
+```{r}
+write.csv(censo_hogares_NQN_PBA, "censo_hogares_NQN_PBA.csv", row.names = FALSE)
+```
+
+```{r}
+censo_2010_hogares_NQN <- censo_2010_hogares_filtrado %>% 
+  filter()
+```
+
+```{r}
+censo_hogares_NQN <- censo_hogares_NQN_PBA %>%
+  filter(str_starts(`Código`, "58"))
+```
+
+```{r}
+censo_hogares_NQN$`Código` <- as.factor(censo_hogares_NQN$`Código`)
+```
+
+```{r}
+summary(censo_hogares_NQN)
+```
+
+```{r}
+censo_hogares_NQN_agrupado <- censo_hogares_NQN %>%
+  group_by(Año) %>%
+  summarise(
+    Poblacion_total = sum(Poblacion, na.rm = TRUE),
+    Hogares_total   = sum(Hogares, na.rm = TRUE),
+    Viviendas_total = sum(Viviendas, na.rm = TRUE)
+  )
+```
+
+```{r}
+censo_hogares_NQN_agrupado
+```
+
+```{r}
+poblacion_NQN <- censo_hogares_NQN_agrupado %>%
+  select(Año, Poblacion_total)
+```
+
+```{r}
+poblacion_NQN <- poblacion_NQN %>%
+  mutate(
+    Poblacion_crec_abs = Poblacion_total - lag(Poblacion_total),
+    Poblacion_crec_pct = (Poblacion_crec_abs / lag(Poblacion_total)) * 100,
+  )
+poblacion_NQN
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Calcular variación intercensal
+var_pct <- poblacion_NQN %>%
+  summarise(
+    variacion = (Poblacion_total[Año == 2022] - Poblacion_total[Año == 2010]) /
+                Poblacion_total[Año == 2010] * 100
+  ) %>%
+  pull(variacion)
+
+# Paleta de colores personalizada
+color_2010 <- "#74add1"  # azul claro
+color_2022 <- "#1b7837"  # verde profundo
+
+# Gráfico estético
+ggplot(poblacion_NQN, aes(x = factor(Año), y = Poblacion_total, fill = factor(Año))) +
+  geom_col(width = 0.55, color = "white", linewidth = 0.8) +
+  scale_fill_manual(
+    values = c("2010" = color_2010, "2022" = color_2022),
+    labels = c("Censo 2010", "Censo 2022")
+  ) +
+  geom_text(
+    aes(label = format(Poblacion_total, big.mark = ".", decimal.mark = ",")),
+    vjust = -0.5,
+    size = 5,
+    fontface = "bold",
+    color = "gray15"
+  ) +
+  annotate(
+    "label",
+    x = 1.5,
+    y = max(poblacion_NQN$Poblacion_total) * 1.12,
+    label = paste0("+", round(var_pct, 1), "% de crecimiento intercensal"),
+    fill = "#f7f7f7",
+    color = "#1b7837",
+    size = 5,
+    fontface = "bold",
+    label.size = 0.3
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.25)),
+    labels = scales::comma_format(big.mark = ".", decimal.mark = ",")
+  ) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Evolución de la población total – Provincia de Neuquén",
+    subtitle = "Comparación entre censos 2010 y 2022",
+    x = NULL,
+    y = "Población total",
+    fill = NULL
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, color = "#222222"),
+    plot.subtitle = element_text(size = 12, color = "#444444"),
+    axis.text = element_text(size = 12),
+    axis.title.y = element_text(size = 13, color = "#333333"),
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+
+```
+
+```{r}
+hogares_NQN <- censo_hogares_NQN_agrupado %>%
+  select(Año, Hogares_total)
+```
+
+```{r}
+hogares_NQN <- hogares_NQN %>%
+  mutate(
+    Hogares_crec_abs = Hogares_total - lag(Hogares_total),
+    Hogares_crec_pct = (Hogares_crec_abs / lag(Hogares_total)) * 100,
+  )
+hogares_NQN
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+# usa la tabla de hogares (no la de población)
+var_pct_hog <- with(hogares_NQN,
+  (Hogares_total[Año == 2022] - Hogares_total[Año == 2010]) /
+  Hogares_total[Año == 2010] * 100
+)
+
+ggplot(hogares_NQN, aes(x = factor(Año), y = Hogares_total, fill = factor(Año))) +
+  geom_col(width = 0.55, color = "white", linewidth = 0.8) +
+  scale_fill_manual(values = c("2010" = "#74add1", "2022" = "#1b7837"),
+                    labels = c("Censo 2010", "Censo 2022")) +
+  geom_text(aes(label = comma(Hogares_total, big.mark = ".", decimal.mark = ",")),
+            vjust = -0.5, size = 5, fontface = "bold", color = "gray15") +
+  annotate("label",
+           x = 1.5,
+           y = max(hogares_NQN$Hogares_total) * 1.12,
+           label = paste0("+", round(var_pct_hog, 1), "% de crecimiento intercensal"),
+           fill = "#f7f7f7", color = "#1b7837", size = 5, fontface = "bold", label.size = 0.3) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.25)),
+                     labels = comma_format(big.mark = ".", decimal.mark = ",")) +
+  labs(title = "Evolución de la cantidad de hogares – Provincia de Neuquén",
+       subtitle = "Comparación entre censos 2010 y 2022",
+       x = NULL, y = "Cantidad de hogares", fill = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold", size = 16),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "top")
+
+
+```
+
+```{r}
+viviendas_NQN <- censo_hogares_NQN_agrupado %>%
+  select(Año, Viviendas_total)
+```
+
+```{r}
+viviendas_NQN <- viviendas_NQN %>%
+  mutate(
+    Viviendas_crec_abs = Viviendas_total - lag(Viviendas_total),
+    Viviendas_crec_pct = (Viviendas_crec_abs / lag(Viviendas_total)) * 100,
+  )
+viviendas_NQN
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+# % de variación intercensal (viviendas)
+var_pct_viv <- with(viviendas_NQN,
+  (Viviendas_total[Año == 2022] - Viviendas_total[Año == 2010]) /
+  Viviendas_total[Año == 2010] * 100
+)
+
+# Colores
+col_2010 <- "#9ecae1"  # azul claro
+col_2022 <- "#6a51a3"  # violeta profundo
+
+ggplot(viviendas_NQN, aes(x = factor(Año), y = Viviendas_total, fill = factor(Año))) +
+  geom_col(width = 0.55, color = "white", linewidth = 0.8) +
+  scale_fill_manual(values = c("2010" = col_2010, "2022" = col_2022),
+                    labels = c("Censo 2010", "Censo 2022")) +
+  geom_text(aes(label = comma(Viviendas_total, big.mark = ".", decimal.mark = ",")),
+            vjust = -0.5, size = 5, fontface = "bold", color = "gray15") +
+  annotate("label",
+           x = 1.5,
+           y = max(viviendas_NQN$Viviendas_total) * 1.12,
+           label = paste0("+", round(var_pct_viv, 1), "% de crecimiento intercensal"),
+           fill = "#f7f7f7", color = col_2022, size = 5,
+           fontface = "bold", label.size = 0.3) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.25)),
+    labels = comma_format(big.mark = ".", decimal.mark = ",")
+  ) +
+  labs(
+    title = "Evolución de la cantidad de viviendas – Provincia de Neuquén",
+    subtitle = "Comparación entre censos 2010 y 2022",
+    x = NULL, y = "Cantidad de viviendas", fill = NULL
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "top"
+  )
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# 1) Totales por año
+resumen <- censo_hogares_NQN %>%
+  group_by(Año) %>%
+  summarise(
+    Poblacion = sum(Poblacion, na.rm = TRUE),
+    Hogares   = sum(Hogares,   na.rm = TRUE),
+    Viviendas = sum(Viviendas, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# 2) Largo + orden solicitado
+long <- resumen %>%
+  pivot_longer(-Año, names_to = "Variable", values_to = "Valor") %>%
+  mutate(Variable = recode(Variable,
+                           Poblacion = "Población",
+                           Hogares   = "Hogares",
+                           Viviendas = "Viviendas"),
+         Variable = factor(Variable, levels = c("Población","Hogares","Viviendas")))
+
+# 3) % de variación intercensal y posición de la etiqueta por grupo
+variacion <- long %>%
+  group_by(Variable) %>%
+  summarise(
+    var_pct = (Valor[Año == 2022] - Valor[Año == 2010]) / Valor[Año == 2010] * 100,
+    y_anno  = max(Valor) * 1.12,   # altura para la etiqueta
+    .groups = "drop"
+  )
+
+# 4) Gráfico integrado (no facetado)
+ggplot(long, aes(x = Variable, y = Valor, fill = factor(Año))) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.6,
+           color = "white", linewidth = 0.8) +
+  geom_text(
+    aes(label = comma(Valor, big.mark=".", decimal.mark=",")),
+    position = position_dodge(width = 0.7),
+    vjust = -0.45, size = 4.2, fontface = "bold", color = "gray15"
+  ) +
+  # etiquetas de % intercensal arriba de cada grupo
+  geom_label(
+    data = variacion,
+    aes(x = Variable, y = y_anno,
+        label = paste0("+", round(var_pct, 1), "% intercensal")),
+    inherit.aes = FALSE,
+    fill = "#f7f7f7", color = "#1b7837",
+    size = 4.2, fontface = "bold", label.size = 0.3
+  ) +
+  scale_fill_manual(values = c("2010" = "#74add1", "2022" = "#1b7837"),
+                    labels = c("Censo 2010", "Censo 2022"), name = NULL) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.25)),
+    labels = comma_format(big.mark=".", decimal.mark=",")
+  ) +
+  labs(
+    title = "Comparativo 2010–2022: Población, Hogares y Viviendas – Neuquén",
+    subtitle = "Barras por año y variación intercensal por indicador",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position = "top"
+  )
+
+```
+
+```{r}
+departamentos_NQN <- departamentos %>% 
+  filter(provincia == "Neuquén")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
