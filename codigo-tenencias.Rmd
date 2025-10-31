@@ -12,9 +12,6 @@ library(tidyr)
 library(janitor)
 ```
 
-```{r}
-setwd("C:/Users/xdgs02/Documents/Archivos Delfina/MPP/MPP-CLINICA-D/data")
-```
 
 ```{r}
 getwd()
@@ -22,7 +19,7 @@ getwd()
 
 
 ```{r}
-nacional_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_nacional.xlsX", skip = 15, col_names = FALSE)
+nacional_2010tenencia <- read_excel("data/censo_2010_tenencia vivienda por jefe de hogar_nacional.xlsX", skip = 15, col_names = FALSE)
 ```
 ```{r}
 head(nacional_2010tenencia)
@@ -59,7 +56,61 @@ nacional_2010tenencia_final <- nacional_2010tenencialimpio%>%
 
 
 ```{r}
-neuquen_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip = 15, col_names = FALSE)
+neuquen_2010tenencia <- read_excel("data/censo_2010_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip = 15, col_names = FALSE)
+```
+```{r}
+neuquen_2010tenencialimpio <- neuquen_2010tenencia%>%
+  rename(nivel_instruccion_raw=...1,
+         depto_nombre_raw=...2,
+         ocupado=...3,
+         desocupado=...4,
+         inactivo=...5,
+         total=...6)%>%
+  mutate(cod_departamento=str_extract(nivel_instruccion_raw,"(?<=AREA # )\\d{5}"))%>%
+  mutate(nombre_departamento = if_else(str_detect(nivel_instruccion_raw, "^AREA #"),
+      depto_nombre_raw,
+      NA_character_))%>%
+  tidyr::fill(cod_departamento, .direction = "down")%>%
+  tidyr::fill(nombre_departamento, .direction = "down")%>%
+  rename(nivel_instruccion=nivel_instruccion_raw,
+         regimen_tenencia=depto_nombre_raw)%>%
+  fill(nivel_instruccion, .direction= "down")%>%
+  fill(regimen_tenencia, .direction= "down")%>%
+  filter(regimen_tenencia != "Régimen de tenencia") %>% 
+  filter(regimen_tenencia != "Total")%>%
+  filter(nivel_instruccion != "Total") %>% 
+  filter(nivel_instruccion != "No aplica") %>% 
+  filter(total != "Total") %>% 
+  filter(ocupado != "Ocupado") %>% 
+  filter(desocupado != "Desocupado") %>% 
+  filter(inactivo != "Inactivo") %>%  
+  select(nivel_instruccion,
+         regimen_tenencia,
+         ocupado,
+         desocupado,
+         inactivo,
+         total,
+         nombre_departamento,
+         cod_departamento)
 ```
 
+```{r}
+neuquen_2010tenencialimpio <- neuquen_2010tenencialimpio %>% 
+  mutate(nivel_instruccion=str_replace_all(string=nivel_instruccion, pattern= "Universtiario", replacement= "Universitario"))
+```
+
+```{r}
+neuquen_2010tenenciavf <- neuquen_2010tenencialimpio %>% 
+  pivot_longer(cols=c(ocupado, desocupado, inactivo, total),
+               names_to="condicion_actividad",
+               values_to= "conteo_hogares") %>% 
+  mutate(conteo_hogares=as.numeric(gsub("-", NA, conteo_hogares))) %>% 
+  filter(!is.na(conteo_hogares)) %>% 
+  select(nivel_instruccion,
+         regimen_tenencia,
+         condicion_actividad,
+         cod_departamento,
+         nombre_departamento,
+         conteo_hogares)
+```
 
