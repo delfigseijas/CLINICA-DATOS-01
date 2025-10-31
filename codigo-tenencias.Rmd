@@ -1,0 +1,65 @@
+---
+title: "TENENCIA-VIVIENDA"
+author: "Delfina González Seijas"
+date: "2025-10-31"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(tidyr)
+library(janitor)
+```
+
+```{r}
+setwd("C:/Users/xdgs02/Documents/Archivos Delfina/MPP/MPP-CLINICA-D/data")
+```
+
+```{r}
+getwd()
+```
+
+
+```{r}
+nacional_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_nacional.xlsX", skip = 15, col_names = FALSE)
+```
+```{r}
+head(nacional_2010tenencia)
+```
+
+
+```{r}
+nacional_2010tenencialimpio <- nacional_2010tenencia%>%
+  rename(nivel_instruccion=...1,
+         regimen_tenencia=...2,
+         ocupado=...3,
+         desocupado=...4,
+         inactivo=...5,
+         total=...6)%>%
+  slice(-1)%>%
+  tidyr::fill(nivel_instruccion, .direction= "down")%>%
+  filter(regimen_tenencia != "Total")%>%
+  filter(ocupado != "Ocupado")%>%
+  filter(!is.na(regimen_tenencia))
+```
+
+
+```{r}
+nacional_2010tenencia_final <- nacional_2010tenencialimpio%>%
+  filter(regimen_tenencia != "Total")%>%
+  filter(nivel_instruccion!= "Total")%>%
+  select(-total)%>%
+  tidyr::pivot_longer(
+    cols=c(ocupado,desocupado,inactivo),
+    names_to = "condicion_actividad",
+    values_to = "frecuencia")%>%
+  mutate(frecuencia = as.numeric(gsub(",", "",frecuencia)))
+```
+
+
+```{r}
+neuquen_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip = 15, col_names = FALSE)
+```
+
+
