@@ -43,15 +43,15 @@ nacional_2010tenencialimpio <- nacional_2010tenencia%>%
 
 
 ```{r}
-nacional_2010tenencia_final <- nacional_2010tenencialimpio%>%
+nacional_2010tenenciavf <- nacional_2010tenencialimpio%>%
   filter(regimen_tenencia != "Total")%>%
   filter(nivel_instruccion!= "Total")%>%
   select(-total)%>%
   tidyr::pivot_longer(
     cols=c(ocupado,desocupado,inactivo),
     names_to = "condicion_actividad",
-    values_to = "frecuencia")%>%
-  mutate(frecuencia = as.numeric(gsub(",", "",frecuencia)))
+    values_to = "hogares")%>%
+  mutate(hogares = as.numeric(gsub(",", "",hogares)))
 ```
 
 
@@ -103,14 +103,99 @@ neuquen_2010tenencialimpio <- neuquen_2010tenencialimpio %>%
 neuquen_2010tenenciavf <- neuquen_2010tenencialimpio %>% 
   pivot_longer(cols=c(ocupado, desocupado, inactivo, total),
                names_to="condicion_actividad",
-               values_to= "conteo_hogares") %>% 
-  mutate(conteo_hogares=as.numeric(gsub("-", NA, conteo_hogares))) %>% 
-  filter(!is.na(conteo_hogares)) %>% 
+               values_to= "hogares") %>% 
+  mutate(hogares=as.numeric(gsub("-", NA, hogares))) %>% 
+  filter(!is.na(hogares)) %>% 
+  filter(condicion_actividad != "total") %>% 
   select(nivel_instruccion,
          regimen_tenencia,
          condicion_actividad,
          cod_departamento,
          nombre_departamento,
-         conteo_hogares)
+         hogares)
+```
+
+```{r}
+nacional_2022tenencia <- read_excel("data/censo_2022_tenencia vivienda por jefe de hogar_ nacional.xlsX", skip=15, col_names=FALSE)
+```
+```{r}
+nacional_2022tenencia <- nacional_2022tenencia %>% 
+  select(-...1) %>%
+  rename(nivel_instruccion=...2,
+         regimen_tenencia=...3,
+         ocupado=...4,
+         desocupado=...5,
+         inactivo=...6) %>% 
+  slice(-1) %>% 
+   tidyr::fill(nivel_instruccion, .direction= "down")%>%
+  filter(regimen_tenencia != "Total")%>%
+  filter(ocupado != "Ocupado")%>%
+  filter(!is.na(regimen_tenencia)) %>% 
+  filter(nivel_instruccion != "Ignorado")
+  
+```
+
+```{r}
+nacional_2022tenenciavf <- nacional_2022tenencia %>% 
+  filter(regimen_tenencia != "Total")%>%
+  filter(nivel_instruccion!= "Total")%>%
+  select(-...7)%>%
+  tidyr::pivot_longer(
+    cols=c(ocupado,desocupado,inactivo),
+    names_to = "condicion_actividad",
+    values_to = "hogares")%>%
+  mutate(hogares = as.numeric(gsub(",", "",hogares)))
+```
+
+```{r}
+neuquen_2022tenencia<- read_excel("data/censo_2022_tenencia vivienda por jefe de hogar_neuquen.xlsX", skip=15, col_names = FALSE)
+```
+```{r}
+neuquen_2022tenencia <- neuquen_2022tenencia%>%
+  select(-...1) %>%
+  select(-...7) %>% 
+  rename(nivel_instruccion_raw=...2,
+         depto_nombre_raw=...3,
+         ocupado=...4,
+         desocupado=...5,
+         inactivo=...6)%>%
+  mutate(cod_departamento=str_extract(nivel_instruccion_raw,"(?<=AREA # )\\d{5}"))%>%
+  mutate(nombre_departamento = if_else(str_detect(nivel_instruccion_raw, "^AREA #"),
+      depto_nombre_raw,NA_character_))%>%
+  tidyr::fill(cod_departamento, .direction = "down")%>%
+  tidyr::fill(nombre_departamento, .direction = "down")%>%
+  rename(nivel_instruccion=nivel_instruccion_raw,
+         regimen_tenencia=depto_nombre_raw)%>%
+  fill(nivel_instruccion, .direction= "down")%>%
+  fill(regimen_tenencia, .direction= "down")%>%
+  filter(regimen_tenencia != "Régimen de tenencia") %>% 
+  filter(regimen_tenencia != "Total")%>%
+  filter(nivel_instruccion != "Total") %>% 
+  filter(nivel_instruccion != "No aplica") %>% 
+  filter(ocupado != "Ocupado") %>% 
+  filter(desocupado != "Desocupado") %>% 
+  filter(inactivo != "Inactivo") %>%  
+  select(nivel_instruccion,
+         regimen_tenencia,
+         ocupado,
+         desocupado,
+         inactivo,
+         nombre_departamento,
+         cod_departamento)
+```
+
+```{r}
+neuquen_2022tenenciavf <- neuquen_2022tenencia %>% 
+  pivot_longer(cols=c(ocupado, desocupado, inactivo),
+               names_to="condicion_actividad",
+               values_to= "hogares") %>% 
+  mutate(hogares=as.numeric(gsub("-", NA, hogares))) %>% 
+  filter(!is.na(hogares)) %>% 
+  select(nivel_instruccion,
+         regimen_tenencia,
+         condicion_actividad,
+         cod_departamento,
+         nombre_departamento,
+         hogares)
 ```
 
