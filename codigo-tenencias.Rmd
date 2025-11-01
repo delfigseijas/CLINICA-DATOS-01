@@ -19,7 +19,7 @@ getwd()
 
 
 ```{r}
-nacional_2010tenencia <- read_excel("data/censo_2010_tenencia vivienda por jefe de hogar_nacional.xlsX", skip = 15, col_names = FALSE)
+nacional_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_nacional.xlsX", skip = 15, col_names = FALSE)
 ```
 ```{r}
 head(nacional_2010tenencia)
@@ -56,7 +56,7 @@ nacional_2010tenenciavf <- nacional_2010tenencialimpio%>%
 
 
 ```{r}
-neuquen_2010tenencia <- read_excel("data/censo_2010_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip = 15, col_names = FALSE)
+neuquen_2010tenencia <- read_excel("censo_2010_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip = 15, col_names = FALSE)
 ```
 ```{r}
 neuquen_2010tenencialimpio <- neuquen_2010tenencia%>%
@@ -116,7 +116,7 @@ neuquen_2010tenenciavf <- neuquen_2010tenencialimpio %>%
 ```
 
 ```{r}
-nacional_2022tenencia <- read_excel("data/censo_2022_tenencia vivienda por jefe de hogar_ nacional.xlsX", skip=15, col_names=FALSE)
+nacional_2022tenencia <- read_excel("censo_2022_tenencia vivienda por jefe de hogar_ nacional.xlsX", skip=15, col_names=FALSE)
 ```
 ```{r}
 nacional_2022tenencia <- nacional_2022tenencia %>% 
@@ -148,7 +148,7 @@ nacional_2022tenenciavf <- nacional_2022tenencia %>%
 ```
 
 ```{r}
-neuquen_2022tenencia<- read_excel("data/censo_2022_tenencia vivienda por jefe de hogar_neuquen.xlsX", skip=15, col_names = FALSE)
+neuquen_2022tenencia<- read_excel("censo_2022_tenencia vivienda por jefe de hogar_ neuquen.xlsX", skip=15, col_names = FALSE)
 ```
 ```{r}
 neuquen_2022tenencia <- neuquen_2022tenencia%>%
@@ -197,5 +197,228 @@ neuquen_2022tenenciavf <- neuquen_2022tenencia %>%
          cod_departamento,
          nombre_departamento,
          hogares)
+```
+
+```{r}
+library(sf)
+library(tmap)
+library(RColorBrewer)
+library(treemapify)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(ggrepel)
+library(scales)
+library(viridis)
+```
+
+```{r}
+setwd("C:/Users/xdgs02/Documents/Archivos Delfina/MPP/MPP-CLINICA-D/data")
+```
+
+```{r}
+nacional_2010tenenciavf <- nacional_2010tenenciavf %>% 
+  mutate(anio="2010",
+         jurisdiccion="Nación")
+```
+
+```{r}
+nacional_2022tenenciavf <- nacional_2022tenenciavf %>% 
+  mutate(anio="2022",
+         jurisdiccion="Nación")
+```
+
+```{r}
+neuquen_2010tenenciavf <- neuquen_2010tenenciavf %>% 
+  mutate(anio="2010",
+         jurisdiccion="Neuquén")
+```
+
+```{r}
+neuquen_2022tenenciavf <- neuquen_2022tenenciavf %>% 
+  mutate(anio="2022",
+         jurisdiccion="Neuquén")
+```
+
+```{r}
+tenencia_consolidado <- bind_rows(nacional_2010tenenciavf, nacional_2022tenenciavf, neuquen_2010tenenciavf, neuquen_2022tenenciavf)
+
+glimpse(tenencia_consolidado)
+```
+
+
+```{r}
+datos_grafico1 <- tenencia_consolidado %>% 
+  mutate(regimen_tenencia= case_when(regimen_tenencia == "Propietario de la vivienda y del terreno" ~ "Propietario", 
+                                     regimen_tenencia== "Propietario sólo de la vivienda" ~ "Propietario", 
+                                     regimen_tenencia=="Propia" ~ "Propietario", 
+                                     regimen_tenencia=="Alquilada" ~ "Inquilino", 
+regimen_tenencia== "Inquilino" ~ "Inquilino",                                     regimen_tenencia=="Ocupante por préstamo" ~ "Prestada", 
+                                     regimen_tenencia== "Prestada" ~ "Prestada",
+                                     regimen_tenencia=="Ocupante por trabajo" ~ "Ocupada por trabajo", 
+                                     regimen_tenencia=="Cedida por trabajo" ~ "Ocupada por trabajo", 
+                                     regimen_tenencia=="Inquilino" ~ "Inquilino",
+                                     regimen_tenencia=="Otra situación" ~ "Otro")) %>% 
+  group_by(anio, jurisdiccion, regimen_tenencia) %>% 
+  summarise(total_hogares=sum(hogares, na.rm=TRUE), .groups = 'drop') %>% 
+  mutate(regimen_tenencia = factor (regimen_tenencia, levels = c( "Propietario",
+                                                                  "Inquilino",
+                                                                  "Prestada",
+                                                                  "Ocupada por trabajo",
+                                                                  "Otra situación")))
+ 
+```
+
+
+```{r}
+datos_grafico1 <- datos_grafico1 %>% 
+  group_by(anio, jurisdiccion) %>% 
+  mutate(total_barra = sum(total_hogares),
+         porcentaje_barra= round((total_hogares/total_barra)*100, digits = 1)) %>%
+  mutate(etiqueta = if_else(porcentaje_barra >= 1.0, paste0(porcentaje_barra, "%"), NA_character_))%>% 
+  ungroup()
+```
+
+
+```{r}
+colores_tenencia_earthy <- colores_tenencia_earthy %>% 
+  c("Propietario"= "#D08C60",
+    "Inquilino"= "#9B97A1",
+    "Prestada"= "#729B79",
+    "Ocupada por trabajo" = "#F1DCA7",
+    "Otro" = "#D9AE94")
+```
+
+
+```{r}
+barras_tenencia <- ggplot(datos_grafico1, aes(x=jurisdiccion, y=total_hogares, fill=regimen_tenencia))+
+  geom_bar(position="fill",
+           stat= "identity",
+           linewidth=0.2,
+           width=0.7)+
+  geom_text(
+    aes(label = etiqueta),
+    stat = "identity",
+    position = position_fill(vjust = 0.5),# Usamos la etiqueta ya filtrada
+    color = "white", # Texto negro para mejor contraste con colores tierra
+    size = 2.7, # Tamaño de texto ligeramente más pequeño
+    fontface = "bold") +
+  facet_wrap(~anio)+
+  scale_fill_manual(values=colores_tenencia_earthy)+
+    labs(title = "Régimen de Tenencia de Vivienda por Jurisdicción",
+       subtitle = "Comparación Nación vs. Neuquén (2010 vs. 2022)",
+       caption = "Fuente: elaboración propia en base a Censo 2010 y 2022 (INDEC)",
+       x = "Año",
+       y = "% de Hogares",
+       fill = "Régimen de Tenencia")+
+  theme_minimal(base_size = 13)+
+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10, face = "bold"),
+       axis.text.y = element_text(size = 12),
+       strip.text = element_text(size = 10, face= "bold"),
+    plot.title = element_text(hjust = 0.5, color = "#729B79", face = "bold", size = 16),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray30"),
+    plot.caption = element_text(face = "italic"),
+    legend.position = "bottom", panel.grid.minor = element_blank())
+print(barras_tenencia)
+
+```
+
+```{r}
+ggsave(filename= "tenencia 2010 a 2022.jpg",
+       plot = barras_tenencia,
+       device= "jpeg",
+       width=12,
+       height=8,
+       dpi=600)
+```
+
+
+```{r}
+datos_grafico2 <- tenencia_consolidado %>% 
+  mutate(regimen_tenencia = case_when(
+    regimen_tenencia == "Propietario de la vivienda y del terreno" ~ "Propietario", 
+
+    regimen_tenencia== "Propietario sólo de la vivienda" ~ "Propietario",  
+    regimen_tenencia=="Propia" ~ "Propietario", 
+
+    regimen_tenencia=="Alquilada" ~ "Inquilino", 
+
+    regimen_tenencia== "Inquilino" ~ "Inquilino", 
+TRUE ~ "Otro")) %>% 
+  filter(condicion_actividad %in% c("ocupado", "desocupado"),regimen_tenencia %in% c("Propietario", "Inquilino")) %>% 
+  mutate(condicion_actividad =tolower(condicion_actividad),
+         condicion_actividad = factor(condicion_actividad, levels = c ("ocupado", "desocupado", "inactivo"))) %>% 
+  group_by(anio, jurisdiccion, regimen_tenencia, condicion_actividad) %>% 
+  summarise(total_hogares =sum(hogares, na.rm=TRUE), .groups = "drop") %>% 
+  group_by(anio, jurisdiccion) %>% 
+  mutate(total_anual = sum(total_hogares),
+         porcentaje = (total_hogares/total_anual)) %>% 
+  ungroup() %>% 
+  filter(regimen_tenencia %in% c("Propietario", "Inquilino")) %>%
+  mutate(anio_factor = as.factor(anio))
+```
+
+```{r}
+colores_tendencia <- c("Propietario" = "#D08C60", 
+  "Inquilino" = "#9B97A1")
+```
+
+```{r}
+lineas <- ggplot(datos_grafico2, aes(x=anio_factor, y=porcentaje, 
+    group = regimen_tenencia, 
+    color = regimen_tenencia))+
+  geom_line(linewidth =1.2)+
+  geom_point(size=4)+
+  facet_wrap(~jurisdiccion)+
+  scale_color_manual(values = colores_tendencia) +
+  scale_y_continuous(labels = scales::percent, name = "Proporción de Hogares") +
+  labs(
+    title = "Evolución de la Tenencia de Vivienda (2010 vs. 2022)",
+    subtitle = "Comparación del porcentaje de hogares Propietarios e Inquilinos",
+    x = "Año",
+    color = "Régimen de Tenencia") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold", size = 18, color = "#5D5761", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.text.x = element_text(face = "bold", size = 12),
+    axis.title = element_text(face = "bold"),
+    legend.position = "bottom",
+    strip.text = element_text(size = 12, face = "bold"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank())
+    
+print(lineas)
+```
+
+
+```{r}
+dispersion <- ggplot(datos_grafico2, aes(x=condicion_actividad, y=regimen_tenencia, size=total_hogares,color=regimen_tenencia))+
+  geom_point(alpha = 0.8)+
+  scale_color_manual(values = colores_tenencia_earthy)+
+    facet_grid(jurisdiccion ~ anio)+
+                       scale_size_continuous(name = "Cantidad de Hogares",
+                        range = c(5, 15),
+                        labels = comma)+
+  labs(title = "Comparación de Propietarios e Inquilinos por Estado de Actividad",
+    subtitle = "Volumen de Hogares de la PEA en las dos principales categorías de Tenencia",
+    x = "Condición de Actividad (PEA)",
+    y = "Régimen de Tenencia",
+    color = "Condición de Actividad") +
+  theme(plot.title = element_text(
+      face = "bold", 
+      size = 18, 
+      color = "#5D5761",
+      hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.caption = element_text(face = "italic"),
+    axis.text = element_text(face = "bold", size = 10),
+    axis.title = element_text(face = "bold"),
+    legend.position = "bottom",
+    strip.text = element_text(size = 12, face = "bold"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank())
+
+print(dispersion)
+    
 ```
 
